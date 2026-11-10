@@ -41,7 +41,7 @@ Inside your personal workspace (`/mnt/roche/${USER}_roche_project`), your result
 
 ---
 
-## 1. Raw Quality Control (`qc.sh`)
+## Raw Quality Control (`qc.sh`)
 
 We perform initial raw quality control to assess the structural integrity of the sequencing data, identify adapter contamination, detect per-base sequence quality degradation, and flag any major sequencing artifacts or GC-bias before spending computational resources on downstream analyses.
 
@@ -78,7 +78,7 @@ After running MultiQC, check per-base sequence quality scores, duplication level
 
 ---
 
-## 2. Quality Trimming & Filtering (`fastp.sh`)
+## Quality Trimming & Filtering (`fastp.sh`)
 
 Trimming and filtering are essential to remove low-quality bases, ambiguous nucleotides, and remaining adapter sequences that can otherwise distort downstream sequence alignments, inflate assembly fragmentation, or introduce false variants.
 
@@ -125,7 +125,7 @@ Review the fastp JSON summary and the post-filtering FastQC reports to verify th
 
 ---
 
-## 3. Host Decontamination (`host_removal.sh`)
+## Host Decontamination (`host_removal.sh`)
 
 In clinical or host-associated metagenomics, a significant portion of raw reads often originate from the host organism rather than the target microbial or viral community; removing these host sequences reduces computational overhead and prevents misattribution during profiling. This step aligns clean reads against the human reference genome (`GRCh38_noalt_as`) using `Bowtie2` and extracts unmapped (host-free) paired reads via `samtools`.
 
@@ -177,7 +177,7 @@ Inspect the Bowtie2 alignment logs and MultiQC summary metrics to determine the 
 
 ---
 
-## 4. De Novo Assembly (`assembly.sh`)
+## De Novo Assembly (`assembly.sh`)
 
 De novo assembly reconstructs overlapping reads into longer contiguous sequences (contigs), allowing us to recover novel viral genomes, bacterial strains, or functional genes without relying strictly on existing reference databases.
 Assembles host-free metagenomic reads into contigs using **MEGAHIT**.
@@ -218,7 +218,7 @@ Evaluate the assembly outputs by checking metrics like contig count, maximum len
 
 ---
 
-## 5. Taxonomic Profiling (`kraken2.sh`)
+## Taxonomic Profiling (`kraken2.sh`)
 
 Kraken2 allows for rapid, k-mer-based taxonomic classification of sequencing reads against a reference database, giving us an immediate quantitative overview of the microbial composition, relative abundances, and presence of specific pathogens within the sample.
 
@@ -261,9 +261,69 @@ done
 
 Examine the Kraken2 report files to check the classification rates, verify the proportion of unclassified versus classified reads, and identify dominant taxa or specific pathogen signatures present in each sample.
 
+
+### Visualise Kraken reports
+
+Visualizing taxonomic profiles through hierarchical interactive charts (Krona) allows researchers to intuitively explore microbial diversity across multiple taxonomic ranks—from phylum down to species—making it easy to spot dominant populations, rare taxa, or unexpected shifts in community composition at a glance.
+
+```
+#!/bin/bash
+#SBATCH --job-name=mg_krona
+#SBATCH --partition=short
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=4G
+#SBATCH --time=00:30:00
+#SBATCH --output=logs/%x_%A_%a.out
+#SBATCH --error=logs/%x_%A_%a.err
+
+# ===================== EDIT HERE =====================
+INPUT_DIR="/mnt/roche/${USER}_roche_project/results/kraken2_reports"
+BASE_OUT="/mnt/roche/${USER}_roche_project/results"
+KRONA_DIR="$BASE_OUT/krona_plots"
+KRAKENTOOLS_DIR="/software/krakentools/1.2.1"
+
+# ===================== ENVIRONMENT SETUP =====================
+module load krona
+
+# Create necessary directories
+mkdir -p "$KRONA_DIR"
+mkdir -p logs
+
+echo "Job started on: $(date)"
+echo "Input directory (Kraken reports): $INPUT_DIR"
+echo "Output directory (Krona plots): $KRONA_DIR"
+
+# ===================== RUN KRONATOOLS VISUALIZATION =====================
+echo "Generating Krona interactive charts from Kraken2 reports..."
+
+for report in "$INPUT_DIR"/*.report.txt; do
+    # Check if files exist to prevent glob errors
+    [ -e "$report" ] || continue
+    base=$(basename "$report" .report.txt)
+    
+    echo "Processing sample: $base"
+    
+    # Step 1: Convert Kraken report to Krona format using KrakenTools
+    python3 "$KRAKENTOOLS_DIR/kreport2krona.py" \
+        --report "$report" \
+        --output "$KRONA_DIR/${base}.krona.txt"
+        
+    # Step 2: Generate interactive HTML plot using KronaTools
+    ktImportText "$KRONA_DIR/${base}.krona.txt" \
+        -o "$KRONA_DIR/${base}_krona.html"
+        
+    # Optional: Remove intermediate text file
+    rm "$KRONA_DIR/${base}.krona.txt"
+done
+
+echo "Krona visualization finished successfully on: $(date)"
+```
+
+Open the generated `.html` files in any web browser to interactively drill down through taxonomic branches, evaluate the relative proportions of major groups, check for unexpected high-abundance species that could point to reagent or sample contamination, and assess the overall depth of taxonomic resolution achieved.
+
 ---
 
-## 6. Reference-Based Alignment (`mapping.sh`)
+## Reference-Based Alignment (`mapping.sh`)
 Reference-based alignment maps our host-free reads directly against a specific reference genome of interest, enabling deep variant calling, consensus generation, coverage depth assessment, and micro-diversity tracking for target organisms.
 
 ```bash
