@@ -42,7 +42,8 @@ Inside your personal workspace (`/mnt/roche/${USER}_roche_project`), your result
 ---
 
 ## 1. Raw Quality Control (`qc.sh`)
-Assesses the quality of raw paired-end sequencing reads before any downstream processing.
+
+We perform initial raw quality control to assess the structural integrity of the sequencing data, identify adapter contamination, detect per-base sequence quality degradation, and flag any major sequencing artifacts or GC-bias before spending computational resources on downstream analyses.
 
 ```bash
 #!/bin/bash
@@ -73,10 +74,13 @@ multiqc "$OUTPUT_DIR" -o "$OUTPUT_DIR/multiqc_report"
 echo "Job completed successfully on: $(date)"
 ```
 
+After running MultiQC, check per-base sequence quality scores, duplication levels, and adapter-content metrics across samples to determine the stringency needed for subsequent trimming and filtering.
+
 ---
 
 ## 2. Quality Trimming & Filtering (`fastp.sh`)
-Removes sequencing adapters and low-quality bases using `fastp`.
+
+Trimming and filtering are essential to remove low-quality bases, ambiguous nucleotides, and remaining adapter sequences that can otherwise distort downstream sequence alignments, inflate assembly fragmentation, or introduce false variants.
 
 ```bash
 #!/bin/bash
@@ -117,10 +121,13 @@ fastqc -o "$QC_DIR" "$CLEAN_DIR"/*.fastq.gz
 multiqc "$QC_DIR" -o "$QC_DIR/multiqc_report"
 ```
 
+Review the fastp JSON summary and the post-filtering FastQC reports to verify that low-quality tails have been successfully removed while ensuring an acceptable proportion of clean, usable read pairs remains for downstream applications.
+
 ---
 
 ## 3. Host Decontamination (`host_removal.sh`)
-Aligns clean reads against the human reference genome (`GRCh38_noalt_as`) using `Bowtie2` and extracts unmapped (host-free) paired reads via `samtools`.
+
+In clinical or host-associated metagenomics, a significant portion of raw reads often originate from the host organism rather than the target microbial or viral community; removing these host sequences reduces computational overhead and prevents misattribution during profiling. This step aligns clean reads against the human reference genome (`GRCh38_noalt_as`) using `Bowtie2` and extracts unmapped (host-free) paired reads via `samtools`.
 
 ```bash
 #!/bin/bash
@@ -166,9 +173,13 @@ fastqc -t 4 -o "$QC_DIR" "$HOSTFREE_DIR"/*.fastq.gz
 multiqc "$QC_DIR" -o "$QC_DIR/multiqc_report"
 ```
 
+Inspect the Bowtie2 alignment logs and MultiQC summary metrics to determine the exact percentage of host reads filtered out per sample, ensuring that a sufficient non-host fraction remains for assembly and profiling.
+
 ---
 
 ## 4. De Novo Assembly (`assembly.sh`)
+
+De novo assembly reconstructs overlapping reads into longer contiguous sequences (contigs), allowing us to recover novel viral genomes, bacterial strains, or functional genes without relying strictly on existing reference databases.
 Assembles host-free metagenomic reads into contigs using **MEGAHIT**.
 
 ```bash
@@ -203,10 +214,13 @@ for r1_hostfree in "$INPUT_DIR"/*_1_hostfree.fastq.gz; do
 done
 ```
 
+Evaluate the assembly outputs by checking metrics like contig count, maximum length, and N50 to gauge the overall continuity and structural quality of the reconstructed genomic drafts.
+
 ---
 
 ## 5. Taxonomic Profiling (`kraken2.sh`)
-Classifies host-free reads using **Kraken2** against a standard taxonomic database.
+
+Kraken2 allows for rapid, k-mer-based taxonomic classification of sequencing reads against a reference database, giving us an immediate quantitative overview of the microbial composition, relative abundances, and presence of specific pathogens within the sample.
 
 ```bash
 #!/bin/bash
@@ -245,10 +259,12 @@ for r1_hostfree in "$INPUT_DIR"/*_1_hostfree.fastq.gz; do
 done
 ```
 
+Examine the Kraken2 report files to check the classification rates, verify the proportion of unclassified versus classified reads, and identify dominant taxa or specific pathogen signatures present in each sample.
+
 ---
 
 ## 6. Reference-Based Alignment (`mapping.sh`)
-Maps host-free reads against custom reference genomes using **minimap2** and sorts/indexes the resulting BAM files.
+Reference-based alignment maps our host-free reads directly against a specific reference genome of interest, enabling deep variant calling, consensus generation, coverage depth assessment, and micro-diversity tracking for target organisms.
 
 ```bash
 #!/bin/bash
@@ -288,3 +304,5 @@ for r1_hostfree in "$INPUT_DIR"/*_1_hostfree.fastq.gz; do
     fi
 done
 ```
+
+Inspect the generated sorted BAM files and alignment statistics to check genome-wide coverage breadth, mean sequencing depth, and mapping rates against the target reference accession.
