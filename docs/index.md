@@ -177,47 +177,6 @@ Inspect the Bowtie2 alignment logs and MultiQC summary metrics to determine the 
 
 ---
 
-## De Novo Assembly (`assembly.sh`)
-
-De novo assembly reconstructs overlapping reads into longer contiguous sequences (contigs), allowing us to recover novel viral genomes, bacterial strains, or functional genes without relying strictly on existing reference databases.
-Assembles host-free metagenomic reads into contigs using **MEGAHIT**.
-
-```bash
-#!/bin/bash
-#SBATCH --job-name=mg_assembly
-#SBATCH --partition=standard
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=64G
-#SBATCH --time=5:00:00
-#SBATCH --output=logs/%x_%A_%a.out
-#SBATCH --error=logs/%x_%A_%a.err
-
-INPUT_DIR="/mnt/roche/${USER}_roche_project/results/host_free_reads"
-BASE_OUT="/mnt/roche/${USER}_roche_project/results"
-ASSEMBLY_DIR="$BASE_OUT/assemblies"
-MEGAHIT_BIN="/software/megahit/1.2.9/bin/megahit"
-
-mkdir -p "$ASSEMBLY_DIR" logs
-
-for r1_hostfree in "$INPUT_DIR"/*_1_hostfree.fastq.gz; do
-    [ -e "$r1_hostfree" ] || continue
-    r2_hostfree="${r1_hostfree/_1_hostfree.fastq.gz/_2_hostfree.fastq.gz}"
-    base=$(basename "$r1_hostfree" _1_hostfree.fastq.gz)
-    
-    if [ -f "$r2_hostfree" ]; then
-        "$MEGAHIT_BIN" \
-            -1 "$r1_hostfree" -2 "$r2_hostfree" \
-            -t 16 \
-            --out-dir "$ASSEMBLY_DIR/$base" \
-            --out-prefix "$base"
-    fi
-done
-```
-
-Evaluate the assembly outputs by checking metrics like contig count, maximum length, and N50 to gauge the overall continuity and structural quality of the reconstructed genomic drafts.
-
----
-
 ## Taxonomic Profiling (`kraken2.sh`)
 
 Kraken2 allows for rapid, k-mer-based taxonomic classification of sequencing reads against a reference database, giving us an immediate quantitative overview of the microbial composition, relative abundances, and presence of specific pathogens within the sample.
@@ -266,7 +225,7 @@ Examine the Kraken2 report files to check the classification rates, verify the p
 
 Visualizing taxonomic profiles through hierarchical interactive charts (Krona) allows researchers to intuitively explore microbial diversity across multiple taxonomic ranks—from phylum down to species—making it easy to spot dominant populations, rare taxa, or unexpected shifts in community composition at a glance.
 
-```
+```bash
 #!/bin/bash
 #SBATCH --job-name=mg_krona
 #SBATCH --partition=short
@@ -366,3 +325,86 @@ done
 ```
 
 Inspect the generated sorted BAM files and alignment statistics to check genome-wide coverage breadth, mean sequencing depth, and mapping rates against the target reference accession.
+
+## De Novo Assembly (`assembly.sh`)
+
+De novo assembly reconstructs overlapping reads into longer contiguous sequences (contigs), allowing us to recover novel viral genomes, bacterial strains, or functional genes without relying strictly on existing reference databases.
+Assembles host-free metagenomic reads into contigs using **MEGAHIT**.
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=mg_assembly
+#SBATCH --partition=standard
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64G
+#SBATCH --time=5:00:00
+#SBATCH --output=logs/%x_%A_%a.out
+#SBATCH --error=logs/%x_%A_%a.err
+
+INPUT_DIR="/mnt/roche/${USER}_roche_project/results/host_free_reads"
+BASE_OUT="/mnt/roche/${USER}_roche_project/results"
+ASSEMBLY_DIR="$BASE_OUT/assemblies"
+MEGAHIT_BIN="/software/megahit/1.2.9/bin/megahit"
+
+mkdir -p "$ASSEMBLY_DIR" logs
+
+for r1_hostfree in "$INPUT_DIR"/*_1_hostfree.fastq.gz; do
+    [ -e "$r1_hostfree" ] || continue
+    r2_hostfree="${r1_hostfree/_1_hostfree.fastq.gz/_2_hostfree.fastq.gz}"
+    base=$(basename "$r1_hostfree" _1_hostfree.fastq.gz)
+    
+    if [ -f "$r2_hostfree" ]; then
+        "$MEGAHIT_BIN" \
+            -1 "$r1_hostfree" -2 "$r2_hostfree" \
+            -t 16 \
+            --out-dir "$ASSEMBLY_DIR/$base" \
+            --out-prefix "$base"
+    fi
+done
+```
+
+Evaluate the assembly outputs by checking metrics like contig count, maximum length, and N50 to gauge the overall continuity and structural quality of the reconstructed genomic drafts.
+
+---
+
+### De Novo Assembly Evaluation (quast.sh)
+
+Evaluating de novo assemblies using QUAST or MetaQUAST is essential because raw assembly outputs often contain fragmentation, chimeric contigs, or structural errors; these tools compute standardized metrics like N50, largest contig size, and total assembly length to objectively measure assembly contiguity and reliability.
+
+```bash
+#!/bin/bash
+#SBATCH --job-name=mg_quast
+#SBATCH --partition=standard
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32G
+#SBATCH --time=02:00:00
+#SBATCH --output=logs/%x_%A_%a.out
+#SBATCH --error=logs/%x_%A_%a.err
+
+BASE_OUT="/mnt/roche/${USER}_roche_project/results"
+ASSEMBLY_DIR="$BASE_OUT/assemblies"
+QUAST_OUT="$BASE_OUT/quast_reports"
+
+module load quast
+
+mkdir -p "$QUAST_OUT" logs
+
+echo "Job started on: $(date)"
+
+# Gather all contig files from individual assembly folders
+contig_files=("$ASSEMBLY_DIR"/*/*.contigs.fa)
+
+if [ ${#contig_files[@]} -gt 0 ]; then
+    metaquast.py "${contig_files[@]}" \
+        -o "$QUAST_OUT" \
+        --threads 8
+    echo "MetaQUAST evaluation finished."
+else
+    echo "No contig files found for QUAST evaluation."
+fi
+
+echo "Job completed successfully on: $(date)"
+```
+
+Examine the generated QUAST/MetaQUAST reports to check whether the N50 is sufficiently high and whether the total assembled length aligns with expectations, ensuring the assembly is robust enough for downstream binning, gene prediction, or functional annotation.
+
