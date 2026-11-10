@@ -2,24 +2,47 @@
 
 This repository contains a collection of production-ready SLURM shell scripts for processing, filtering, assembling, and analyzing high-throughput metagenomic sequencing data on a high-performance computing (HPC) cluster.
 
----
+## Getting Started & Workspace Guidelines
 
-## Workflow Overview
+To maintain an organized environment and avoid permission conflicts:
 
-```text
-Raw Reads 
-  ├──> 1. Raw Quality Control (FastQC / MultiQC)
-  ├──> 2. Trimming & Filtering (fastp)
-  ├──> 3. Host Decontamination (Bowtie2 vs. GRCh38)
-        ├──> 4a. De Novo Assembly (MEGAHIT)
-        ├──> 4b. Taxonomic Profiling (Kraken2)
-        └──> 4c. Reference Alignment (Minimap2)
+1. **Personal Workspace:** Every user must work strictly inside their individual workspace directory:
+   
+
+   $$
+   \text{Workspace Path: } /mnt/roche/\${USER}\_roche\_project
+   $$
+
+2. **Shared Resources:** Raw sample datasets and pre-downloaded reference databases are already provided and maintained in the central shared folder:
+   
+
+   $$
+   \text{Shared Resource Path: } /mnt/roche/resources/datasets/metagenomics
+   $$
+
+## Expected Project File Structure
+
+Inside your personal workspace (`/mnt/roche/${USER}_roche_project`), your results and project layout should follow this structure:
+
 ```
+/mnt/roche/${USER}_roche_project/
+├── scripts/                # Store your SLURM submission scripts here
+├── logs/                   # Job output (.out) and error (.err) log files
+└── results/
+    ├── qc/                 # Raw FastQC and MultiQC reports
+    ├── cleaned_reads/      # Trimming and filtering outputs (fastp)
+    ├── host_free_reads/    # Host-decontaminated paired-end reads (Bowtie2)
+    ├── assemblies/         # De novo contigs (MEGAHIT)
+    ├── kraken2_reports/    # Taxonomic classification outputs
+    └── mapping_*/          # Reference-based alignment BAM files (Minimap2)
+
+```
+
 
 ---
 
 ## 1. Raw Quality Control (`qc.sh`)
-Assesses the quality of raw paired-end sequencing reads prior to any downstream processing.
+Assesses the quality of raw paired-end sequencing reads before any downstream processing.
 
 ```bash
 #!/bin/bash
