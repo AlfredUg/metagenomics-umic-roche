@@ -9,16 +9,16 @@ To maintain an organized environment and avoid permission conflicts:
 1. **Personal Workspace:** Every user must work strictly inside their individual workspace directory:
    
 
-   $$
-   \text{Workspace Path: } /mnt/roche/\${USER}\_roche\_project
-   $$
+   ```
+   /mnt/roche/${USER}_roche_project
+   ```
 
 2. **Shared Resources:** Raw sample datasets and pre-downloaded reference databases are already provided and maintained in the central shared folder:
    
 
-   $$
-   \text{Shared Resource Path: } /mnt/roche/resources/datasets/metagenomics
-   $$
+   ```
+   /mnt/roche/resources/datasets/metagenomics
+   ```
 
 ## Expected Project File Structure
 
