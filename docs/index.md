@@ -140,7 +140,7 @@ In clinical or host-associated metagenomics, a significant portion of raw reads 
 #SBATCH --error=logs/%x_%A_%a.err
 
 INPUT_DIR="/mnt/roche/${USER}_roche_project/results/cleaned_reads"
-HUMAN_INDEX="/mnt/roche/alfred_roche_project/databases/human/GRCh38_noalt_as"
+HUMAN_INDEX="/mnt/roche/${USER}_roche_project/databases/human/GRCh38_noalt_as"
 
 BASE_OUT="/mnt/roche/${USER}_roche_project/results"
 HOSTFREE_DIR="$BASE_OUT/host_free_reads"
@@ -233,7 +233,7 @@ Kraken2 allows for rapid, k-mer-based taxonomic classification of sequencing rea
 #SBATCH --error=logs/%x_%A_%a.err
 
 INPUT_DIR="/mnt/roche/${USER}_roche_project/results/host_free_reads"
-KRAKEN_DB="/mnt/roche/alfred_roche_project/databases/krakenDB"
+KRAKEN_DB="/mnt/roche/${USER}_roche_project/databases/krakenDB"
 
 BASE_OUT="/mnt/roche/${USER}_roche_project/results"
 KRAKEN_OUT="$BASE_OUT/kraken2_reports"
