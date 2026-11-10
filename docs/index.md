@@ -26,15 +26,29 @@ Inside your personal workspace (`/mnt/roche/${USER}_roche_project`), your result
 
 ```
 /mnt/roche/${USER}_roche_project/
-├── scripts/                # Store your SLURM submission scripts here
-├── logs/                   # Job output (.out) and error (.err) log files
-└── results/
-    ├── qc/                 # Raw FastQC and MultiQC reports
-    ├── cleaned_reads/      # Trimming and filtering outputs (fastp)
-    ├── host_free_reads/    # Host-decontaminated paired-end reads (Bowtie2)
-    ├── assemblies/         # De novo contigs (MEGAHIT)
-    ├── kraken2_reports/    # Taxonomic classification outputs
-    └── mapping_*/          # Reference-based alignment BAM files (Minimap2)
+├── scripts/
+│   ├── qc.sh                  # 1. Raw Quality Control
+│   ├── fastp.sh               # 2. Trimming & Filtering
+│   ├── host_removal.sh        # 3. Host Decontamination
+│   ├── kraken2.sh             # 4a. Taxonomic Profiling
+│   ├── krona.sh               # 4b. Taxonomic Visualization
+│   ├── mapping.sh             # 5. Reference-Based Alignment
+│   ├── assembly.sh            # 6a. De Novo Assembly
+│   └── quast.sh               # 6b. Assembly Evaluation
+│
+├── results/
+│   ├── qc/                       # Raw FastQC & MultiQC outputs
+│   ├── cleaned_reads/            # Fastp trimmed and filtered reads
+│   ├── qc_reports/               # Fastp JSON/HTML and MultiQC reports
+│   ├── host_free_reads/          # Host-decontaminated paired FASTQ files
+│   ├── host_removal_qc/          # FastQC & MultiQC on host-free reads
+│   ├── kraken2_reports/          # Kraken2 classification reports (.report.txt)
+│   ├── krona_plots/              # Interactive Krona HTML visualizations
+│   ├── mapping_<ACCESSION_ID>/   # Sorted BAM files and indices
+│   ├── assemblies/               # MEGAHIT contig directories per sample
+│   └── quast_reports/            # MetaQUAST evaluation reports
+│
+└── logs/                         # SLURM job standard output and error logs
 
 ```
 
