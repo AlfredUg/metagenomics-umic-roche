@@ -83,7 +83,7 @@ squeue -u $USER
 
 ---
 
-## Raw Quality Control (`qc.sh`)
+## Raw Quality Control
 
 We perform initial raw quality control to assess the structural integrity of the sequencing data, identify adapter contamination, detect per-base sequence quality degradation, and flag any major sequencing artifacts or GC-bias before spending computational resources on downstream analyses.
 
@@ -134,7 +134,7 @@ After running MultiQC, check per-base sequence quality scores, duplication level
 
 ---
 
-## Quality Trimming & Filtering (`trimming.sh`)
+## Quality Trimming & Filtering
 
 Trimming and filtering are essential to remove low-quality bases, ambiguous nucleotides, and remaining adapter sequences that can otherwise distort downstream sequence alignments, inflate assembly fragmentation, or introduce false variants.
 
@@ -208,7 +208,7 @@ Review the fastp JSON summary and the post-filtering FastQC reports to verify th
 
 ---
 
-## Host Decontamination (`host_removal.sh`)
+## Host Decontamination
 
 In clinical or host-associated metagenomics, a significant portion of raw reads often originate from the host organism rather than the target microbial or viral community; removing these host sequences reduces computational overhead and prevents misattribution during profiling. This step aligns clean reads against the human reference genome (`GRCh38_noalt_as`) using `Bowtie2` and extracts unmapped (host-free) paired reads via `samtools`.
 
@@ -290,7 +290,7 @@ Inspect the Bowtie2 alignment logs and MultiQC summary metrics to determine the 
 
 ---
 
-## Taxonomic Profiling (`kraken2.sh`)
+## Taxonomic Profiling
 
 Kraken2 allows for rapid, k-mer-based taxonomic classification of sequencing reads against a reference database, giving us an immediate quantitative overview of the microbial composition, relative abundances, and presence of specific pathogens within the sample.
 
@@ -417,7 +417,7 @@ Open the generated `.html` files in any web browser to interactively drill down 
 
 ---
 
-## Reference-Based Alignment (`mapping.sh`)
+## Reference-Based Alignment
 Reference-based alignment maps our host-free reads directly against a specific reference genome of interest, enabling deep variant calling, consensus generation, coverage depth assessment, and micro-diversity tracking for target organisms.
 
 ```bash
@@ -492,7 +492,7 @@ echo "All minimap2 reference mapping and sorting tasks completed successfully on
 
 Inspect the generated sorted BAM files and alignment statistics to check genome-wide coverage breadth, mean sequencing depth, and mapping rates against the target reference accession.
 
-## De Novo Assembly (`assembly.sh`)
+## De Novo Assembly
 
 De novo assembly reconstructs overlapping reads into longer contiguous sequences (contigs), allowing us to recover novel viral genomes, bacterial strains, or functional genes without relying strictly on existing reference databases.
 Assembles host-free metagenomic reads into contigs using **MEGAHIT**.
@@ -552,7 +552,7 @@ Evaluate the assembly outputs by checking metrics like contig count, maximum len
 
 ---
 
-### De Novo Assembly Evaluation (quast.sh)
+### De Novo Assembly Evaluation
 
 Evaluating de novo assemblies using QUAST or MetaQUAST is essential because raw assembly outputs often contain fragmentation, chimeric contigs, or structural errors; these tools compute standardized metrics like N50, largest contig size, and total assembly length to objectively measure assembly contiguity and reliability.
 
